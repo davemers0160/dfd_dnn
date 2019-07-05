@@ -67,7 +67,7 @@ std::string cropper_stats_file = "crop_stats_";
 // ----------------------------------------------------------------------------
 void get_platform_control(void)
 {
-    getPlatform(platform);
+    get_platform(platform);
     
     if (platform == "")
 	{
@@ -156,7 +156,7 @@ int main(int argc, char** argv)
     // these are the parameters to load in an image to make sure that it is the correct size
     // for the network.  The first number makes sure that the image is a modulus of the number
     // and the second number is an offest from the modulus.  This is used based on the network
-    // structure (downsampling and upsmapling tensor sizes).
+    // structure (downsampling and upsampling tensor sizes).
     std::pair<uint32_t, uint32_t> mod_params(16, 0);     
 
     //////////////////////////////////////////////////////////////////////////////////
