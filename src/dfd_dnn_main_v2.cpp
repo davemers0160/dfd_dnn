@@ -27,7 +27,7 @@
 #include "num2string.h"
 
 #include "gorgon_capture.h"
-#include "dfd_cropper_rw.h"
+#include "dfd_cropper.h"
 #include "center_cropper.h"
 #include "get_cuda_devices.h"
 #include "apply_random_noise.h"
