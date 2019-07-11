@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     std::string train_inputfile;
     std::string test_inputfile;
     std::string train_data_directory, test_data_directory;
-    std::string home;
+    std::string data_home;
     
     std::vector<std::vector<std::string>> training_file;
     std::vector<std::vector<std::string>> test_file;
@@ -145,7 +145,6 @@ int main(int argc, char** argv)
     std::vector<double> stop_criteria;
     uint64_t num_crops;
     std::vector<std::pair<uint64_t, uint64_t>> crop_sizes; // height, width
-    //std::pair<uint64_t, uint64_t > crop_size(38, 148);
     std::vector<uint32_t> filter_num;
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
@@ -242,7 +241,7 @@ int main(int argc, char** argv)
         get_current_time(sdate, stime);
         logfileName = logfileName + sdate + "_" + stime + ".txt";
 
-        std::cout << "Log File:             " << (output_save_location + logfileName) << std::endl;
+        std::cout << "Log File:             " << (output_save_location + logfileName) << std::endl << std::endl;
         DataLogStream.open((output_save_location + logfileName), ios::out | ios::app);
         
         // Add the date and time to the start of the log file
@@ -253,31 +252,30 @@ int main(int argc, char** argv)
         ///////////////////////////////////////////////////////////////////////////////
         // Step 1: Read in the training and testing images
         ///////////////////////////////////////////////////////////////////////////////
-        // get the "HOME" environment variable
-        home = path_check(get_env_variable("HOME"));
+        // get the "DATA_HOME" environment variable <- location of the root data folder
+        data_home = path_check(get_env_variable("DATA_HOME"));
  
         // parse through the supplied training csv file
 #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
-        parse_csv_file((home+"DFD"+train_inputfile), training_file);
+        parse_csv_file(train_inputfile, training_file);
         // the first line in this file is now the data directory
-        train_data_directory = home + training_file[0][0];
+        train_data_directory = data_home + training_file[0][0];
 #else
         if (HPC == 1)
         {
-            parse_csv_file((home+"Projects"+train_inputfile), training_file);
-            data_directory = home + training_file[0][2];
+            parse_csv_file(train_inputfile, training_file);
+            data_directory = data_home + training_file[0][2];
         }
         else
         {
-            parse_csv_file((home+"DfD"+train_inputfile), training_file);
-            data_directory = home + training_file[0][1];
+            parse_csv_file(train_inputfile, training_file);
+            data_directory = data_home + training_file[0][1];
         }
 #endif
 
         // remove the first line which was the data directory
         training_file.erase(training_file.begin());
         
-
         std::cout << get_cuda_devices() << std::endl;
 
         DataLogStream << get_cuda_devices();
@@ -303,18 +301,18 @@ int main(int argc, char** argv)
 //-----------------------------------------------------------------------------
         // load the test data
 #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
-        parse_csv_file((home+"DFD"+test_inputfile), test_file);
-        test_data_directory = home + test_file[0][0];
+        parse_csv_file(test_inputfile, test_file);
+        test_data_directory = data_home + test_file[0][0];
 #else
         if (HPC == 1)
         {
-            parse_csv_file((home+"Projects"+test_inputfile), test_file);
-            data_directory = home + test_file[0][2];
+            parse_csv_file(test_inputfile, test_file);
+            data_directory = data_home + test_file[0][2];
         }
         else
         {
-            parse_csv_file((home+"DfD"+test_inputfile), test_file);
-            data_directory = home + test_file[0][1];
+            parse_csv_file(test_inputfile, test_file);
+            data_directory = data_home + test_file[0][1];
         }
 #endif
 
@@ -365,8 +363,8 @@ int main(int argc, char** argv)
         dfd_rw_cropper cropper;
         cropper.set_chip_dims(crop_sizes[0]);
         cropper.set_seed(time(0));
-        cropper.set_scale_x(scale.second);
-        cropper.set_scale_y(scale.first);
+        cropper.set_scale(scale);
+        //cropper.set_scale_y(scale.first);
         cropper.set_expansion_factor(expansion_factor);
         cropper.set_stats_filename((output_save_location + cropper_stats_file));
 
@@ -441,11 +439,11 @@ int main(int argc, char** argv)
                 //@mem((gt_crop[0].data).data,UINT16,1,gt_crop[0].nc(), gt_crop[0].nr(),gt_crop[0].nc()*2)
                 //@mem((tr_crop[0][0].data).data,UINT16,1,tr_crop[0][0].nc(), tr_crop[0][0].nr(),tr_crop[0][0].nc()*2)
 
-                // apply a random color change to the image
-                for (auto&& tc : tr_crop)
-                {
-                    apply_random_noise((uint8_t)0, (uint8_t)255, tc, rnd, std);
-                }
+                // apply a random noise to the image
+                //for (auto&& tc : tr_crop)
+                //{
+                //    apply_random_noise((uint8_t)0, (uint8_t)255, tc, rnd, std);
+                //}
 
                 trainer.train_one_step(tr_crop, gt_crop);
             }
@@ -561,15 +559,15 @@ int main(int argc, char** argv)
         // Step 4: Show the training results
         ///////////////////////////////////////////////////////////////////////////////
 
-        dfd_net_type dfd_test_net;
+        //dfd_net_type dfd_test_net;
 
-        std::cout << std::endl << "Loading " << (sync_save_location + net_name) << std::endl;
-        dlib::deserialize(sync_save_location + net_name) >> dfd_test_net;
+        //std::cout << std::endl << "Loading " << (sync_save_location + net_name) << std::endl;
+        //dlib::deserialize(sync_save_location + net_name) >> dfd_test_net;
 
 
         std::cout << "Analyzing Training Results..." << std::endl;
 
-        train_results = eval_all_net_performance(dfd_test_net, tr, gt_train, crop_sizes[1], scale);
+        train_results = eval_all_net_performance(dfd_net, tr, gt_train, crop_sizes[1], scale);
         std::cout << "------------------------------------------------------------------" << std::endl;
         //std::cout << "Image Crop #: " << idx << std::endl;
         std::cout << "NMAE, NRMSE, SSIM, Var_GT, Var_DM: " << std::fixed << std::setprecision(6) << train_results(0, 0) << ", " << train_results(0, 1) << ", " << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << std::endl;
@@ -596,7 +594,7 @@ int main(int argc, char** argv)
                 center_cropper(tr[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
 
                 start_time = chrono::system_clock::now();
-                tmp_results = eval_net_performance(dfd_test_net, tr[idx], gt_train[idx], map, crop_sizes[1], scale);
+                tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, crop_sizes[1], scale);
                 //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
                 stop_time = chrono::system_clock::now();
 
@@ -630,7 +628,7 @@ int main(int argc, char** argv)
 
         std::cout << std::endl << "Analyzing Test Results..." << std::endl;
 
-        test_results = eval_all_net_performance(dfd_test_net, te, gt_test, crop_sizes[1], scale);
+        test_results = eval_all_net_performance(dfd_net, te, gt_test, crop_sizes[1], scale);
         std::cout << "------------------------------------------------------------------" << std::endl;
         std::cout << "NMAE, NRMSE, SSIM, Var_GT, Var_DM: " << std::fixed << std::setprecision(6) << test_results(0, 0) << ", " << test_results(0, 1) << ", " << test_results(0, 2) << ", " << test_results(0, 4) << ", " << test_results(0, 5) << std::endl;
 
@@ -660,7 +658,7 @@ int main(int argc, char** argv)
                 center_cropper(te[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
 
                 start_time = chrono::system_clock::now();
-                tmp_results = eval_net_performance(dfd_test_net, te[idx], gt_test[idx], map, crop_sizes[1], scale);
+                tmp_results = eval_net_performance(dfd_net, te[idx], gt_test[idx], map, crop_sizes[1], scale);
                 //dlib::matrix<uint16_t> map = dfd_test_net(te[idx]);
                 //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
                 stop_time = chrono::system_clock::now();
