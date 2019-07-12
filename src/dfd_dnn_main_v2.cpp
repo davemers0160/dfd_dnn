@@ -358,9 +358,10 @@ int main(int argc, char** argv)
         trainer.be_verbose();
         trainer.set_synchronization_file((sync_save_location + net_sync_name), std::chrono::minutes(5));
         trainer.set_iterations_without_progress_threshold(3000);
+        trainer.set_test_iterations_without_progress_threshold(3000);
         trainer.set_max_num_epochs(65000);
 
-        dfd_rw_cropper cropper;
+        dfd_cropper cropper;
         cropper.set_chip_dims(crop_sizes[0]);
         cropper.set_seed(time(0));
         cropper.set_scale(scale);
@@ -453,7 +454,6 @@ int main(int argc, char** argv)
             }
 
             stop_time = chrono::system_clock::now();
-            //e_t = stop_time - start_time;
             elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
             
             if((double)elapsed_time.count()/(double)3600.0 > training_duration)
@@ -465,7 +465,9 @@ int main(int argc, char** argv)
             
             if((one_step_calls % test_step_count) == 0)
             {
-              
+                cropper((uint64_t)1, tr, gt_train, tr_crop, gt_crop);
+                //trainer.test_one_step(tr_crop, gt_crop);
+                
                 // run the training and test images through the network to evaluate the intermediate performance
                 train_results = eval_all_net_performance(dfd_net, tr, gt_train, crop_sizes[1], scale);
                 test_results = eval_all_net_performance(dfd_net, te, gt_test, crop_sizes[1], scale);
