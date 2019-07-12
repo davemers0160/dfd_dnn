@@ -264,12 +264,12 @@ int main(int argc, char** argv)
         if (HPC == 1)
         {
             parse_csv_file(train_inputfile, training_file);
-            data_directory = data_home + training_file[0][2];
+            train_data_directory = data_home + training_file[0][2];
         }
         else
         {
             parse_csv_file(train_inputfile, training_file);
-            data_directory = data_home + training_file[0][1];
+            train_data_directory = data_home + training_file[0][1];
         }
 #endif
 
@@ -307,12 +307,12 @@ int main(int argc, char** argv)
         if (HPC == 1)
         {
             parse_csv_file(test_inputfile, test_file);
-            data_directory = data_home + test_file[0][2];
+            test_data_directory = data_home + test_file[0][2];
         }
         else
         {
             parse_csv_file(test_inputfile, test_file);
-            data_directory = data_home + test_file[0][1];
+            test_data_directory = data_home + test_file[0][1];
         }
 #endif
 
