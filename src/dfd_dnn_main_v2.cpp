@@ -465,7 +465,7 @@ int main(int argc, char** argv)
             
             if((one_step_calls % test_step_count) == 0)
             {
-                cropper((uint64_t)1, tr, gt_train, tr_crop, gt_crop);
+                cropper(num_crops, tr, gt_train, tr_crop, gt_crop);
                 trainer.test_one_step(tr_crop, gt_crop);
                 
                 // run the training and test images through the network to evaluate the intermediate performance
