@@ -31,6 +31,7 @@
 #include "center_cropper.h"
 #include "get_cuda_devices.h"
 #include "apply_random_noise.h"
+#include "array_image_operations.h"
 
 // Net Version
 // Things must go in this order since the array size is determined
@@ -43,8 +44,12 @@
 #include <dlib/dnn.h>
 #include <dlib/image_io.h>
 #include <dlib/data_io.h>
-#include <dlib/gui_widgets.h>
 #include <dlib/image_transforms.h>
+
+// this is for enabling GUI support, i.e. opening windows
+#ifndef DLIB_NO_GUI_SUPPORT
+    #include <dlib/gui_widgets.h>
+#endif
 
 using namespace std;
 using namespace dlib;
@@ -566,7 +571,6 @@ int main(int argc, char** argv)
         //std::cout << std::endl << "Loading " << (sync_save_location + net_name) << std::endl;
         //dlib::deserialize(sync_save_location + net_name) >> dfd_test_net;
 
-
         std::cout << "Analyzing Training Results..." << std::endl;
 
         train_results = eval_all_net_performance(dfd_net, tr, gt_train, crop_sizes[1], scale);
@@ -582,47 +586,52 @@ int main(int argc, char** argv)
         dlib::matrix<uint16_t> map;
         dlib::matrix<double, 1, 6> tmp_results;
 
-        if(HPC == 0)
+
+#ifndef DLIB_NO_GUI_SUPPORT
+
+        dlib::image_window win0;
+        dlib::image_window win1;
+        dlib::image_window win2;
+
+        std::cout << "Image Count: " << tr.size() << std::endl;
+
+        for (idx = 0; idx < tr.size(); ++idx)
         {
-            dlib::image_window win0;
-            dlib::image_window win1;
-            dlib::image_window win2;
 
-            std::cout << "Image Count: " << tr.size() << std::endl;
+            //center_cropper(tr[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
 
-            for (idx = 0; idx < tr.size(); ++idx)
-            {
+            start_time = chrono::system_clock::now();
+            tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, crop_sizes[1], scale);
+            //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
+            stop_time = chrono::system_clock::now();
 
-                center_cropper(tr[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
+            dlib::matrix<dlib::rgb_pixel> rgb_img;
+            merge_channels(tr[idx], rgb_img, 0);
 
-                start_time = chrono::system_clock::now();
-                tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, crop_sizes[1], scale);
-                //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
-                stop_time = chrono::system_clock::now();
-
-                win0.clear_overlay();
-                win0.set_image(test_crop[0]);
-                win0.set_title("Input Image");
+            win0.clear_overlay();
+            win0.set_image(rgb_img);
+            win0.set_title("Input Image");
         
-                win1.clear_overlay();
-                win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_train[idx]),0.0,255.0));
-                win1.set_title("Ground Truth");
+            win1.clear_overlay();
+            win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_train[idx]),0.0,255.0));
+            win1.set_title("Ground Truth");
 
-                win2.clear_overlay();
-                win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
-                win2.set_title("DNN Map");
+            win2.clear_overlay();
+            win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
+            win2.set_title("DNN Map");
 
-                elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
-                std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
-                std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
-                //std::cin.ignore();
+            elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
+            std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
+            std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
 
-            }
-
-            win0.close_window();
-            win1.close_window();
-            win2.close_window();
         }
+
+        //win0.close_window();
+        //win1.close_window();
+        //win2.close_window();
+
+#endif
+
 
         ///////////////////////////////////////////////////////////////////////////////
         // Step 5: Run through test images
@@ -647,62 +656,62 @@ int main(int argc, char** argv)
         DataLogStream << std::fixed << std::setprecision(6) << test_results(0, 0) << ", " << test_results(0, 1) << ", " << test_results(0, 2) << ", " << test_results(0, 4) << ", " << test_results(0, 5) << std::endl;
         DataLogStream << "------------------------------------------------------------------" << std::endl;
 
-        if(HPC == 0)
+
+#ifndef DLIB_NO_GUI_SUPPORT
+
+        //dlib::image_window win0;
+        //dlib::image_window win1;
+        //dlib::image_window win2;
+
+        std::cout << "Image Count: " << te.size() << std::endl;;
+
+        for (idx = 0; idx < te.size(); ++idx)
         {
-            dlib::image_window win0;
-            dlib::image_window win1;
-            dlib::image_window win2;
+            //center_cropper(te[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
 
-            std::cout << "Image Count: " << te.size() << std::endl;;
+            start_time = chrono::system_clock::now();
+            tmp_results = eval_net_performance(dfd_net, te[idx], gt_test[idx], map, crop_sizes[1], scale);
+            //dlib::matrix<uint16_t> map = dfd_test_net(te[idx]);
+            //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
+            stop_time = chrono::system_clock::now();
 
-            for (idx = 0; idx < te.size(); ++idx)
-            {
-                center_cropper(te[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
+            dlib::matrix<dlib::rgb_pixel> rgb_img;
+            merge_channels(te[idx], rgb_img, 0);
 
-                start_time = chrono::system_clock::now();
-                tmp_results = eval_net_performance(dfd_net, te[idx], gt_test[idx], map, crop_sizes[1], scale);
-                //dlib::matrix<uint16_t> map = dfd_test_net(te[idx]);
-                //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
-                stop_time = chrono::system_clock::now();
+            win0.clear_overlay();
+            win0.set_image(rgb_img);
+            win0.set_title("Input Image");
 
-                win0.clear_overlay();
-                win0.set_image(test_crop[0]);
-                win0.set_title("Input Image");
+            win1.clear_overlay();
+            win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_test[idx]),0.0,255.0));
+            win1.set_title("Groundtruth Depthmap");
 
-                win1.clear_overlay();
-                win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_test[idx]),0.0,255.0));
-                win1.set_title("Groundtruth Depthmap");
+            win2.clear_overlay();
+            win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
+            win2.set_title("DFD DNN Depthmap");
 
-                win2.clear_overlay();
-                win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
-                win2.set_title("DFD DNN Depthmap");
+            elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
+            std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
+            std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
 
-                elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
-                std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
-                std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
-                //std::cin.ignore();
-
-            }
-
-            DataLogStream << std::endl;
-
-        #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
-            Beep(500, 1000);
-        #endif
-
-            std::cout << "End of Program." << std::endl;
-            DataLogStream.close();
-
-            //std::cin.ignore();
-            win0.close_window();
-            win1.close_window();
-            win2.close_window();
         }
-        else
-        {
-            std::cout << "End of Program." << std::endl;
-            DataLogStream.close();
-        }
+
+        win0.close_window();
+        win1.close_window();
+        win2.close_window();
+
+#endif
+
+        DataLogStream << std::endl;
+        DataLogStream.close();
+
+        std::cout << "End of Program." << std::endl;
+
+    #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
+        Beep(500, 1000);
+        std::cout << "Press Enter to Close" << std::endl;
+        std::cin.ignore();
+    #endif
 
     }
     catch (std::exception& e)
@@ -716,11 +725,12 @@ int main(int argc, char** argv)
 
         if(HPC == 0)
         {            
-            std::cout << "Press Enter to close..." << std::endl;
+            std::cout << "Press Enter to Close" << std::endl;
             std::cin.ignore();
         }
 
     }
+
     return 0;
 
 }    // end of main
