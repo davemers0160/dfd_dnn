@@ -25,29 +25,36 @@ message("Platform: " ${PLATFORM})
 
 
 if(${PLATFORM} STREQUAL "Laptop")
-    include(D:/dlib/dlib/cmake)
     set(COMMON_ROOT "D:/Common")
-    set(DFD_COMMON_ROOT "D:/Projects/dfd_common")
-elseif(${PLATFORM} STREQUAL "MainGear")
-    include(~/dlib-19.17/dlib/cmake)
-    set(COMMON_ROOT "~/Common")
-    set(DFD_COMMON_ROOT "~/Projects/dfd_common")
-elseif(${PLATFORM} STREQUAL "HPC")
-    include(~/dlib-19.15/dlib/cmake)
-    set(COMMON_ROOT "$HOME/Common")
-    set(DFD_COMMON_ROOT "$HOME/Projects/dfd_common")
-else()
-    include(D:/dlib/dlib/cmake)
-    set(COMMON_ROOT "D:/Common")
+    set(DLIB_CONTRIB "D:/Projects/dlib-contrib")
     set(DFD_COMMON_ROOT "D:/Projects/dfd_common")	
+    include(D:/dlib-19.15/dlib/cmake)
+elseif(${PLATFORM} STREQUAL "MainGear")
+    set(_ECLIPSE_VERSION "3.8")
+    set(COMMON_ROOT "~/Common")
+    set(DLIB_CONTRIB "~/Projects/dlib-contrib")
+    set(DFD_COMMON_ROOT "~/Projects/dfd_common")
+    include(~/dlib-19.17/dlib/cmake)
+elseif(${PLATFORM} STREQUAL "HPC")
+	set(COMMON_ROOT "$HOME/Common")
+    set(DLIB_CONTRIB "~/Projects/dlib-contrib")
+    set(DFD_COMMON_ROOT "~/Projects/dfd_common")
+    include(~/dlib/dlib/cmake)
+else()
+    set(COMMON_ROOT "D:/Common")
+    set(DLIB_CONTRIB "D:/Projects/dlib-contrib")
+    set(DFD_COMMON_ROOT "D:/Projects/dfd_common")	
+    include(D:/dlib-19.17/dlib/cmake)
 endif()
 
 
 # grab all of the *.c and *.cpp files in the src directory
-file(GLOB SOURCES "src/*.c*")	
+file(GLOB SOURCES "src/*.c*"	
+    "${COMMON_ROOT}/src/*.cpp"
+    "${DLIB_CONTRIB}/src/*.cpp"
+    )            
             
-            
-set(project_includes "include" "${COMMON_ROOT}/include" "${DFD_COMMON_ROOT}/include")            
+set(project_includes "include" "${COMMON_ROOT}/include" "${DLIB_CONTRIB}/include" "${DFD_COMMON_ROOT}/include")
             
 message(" ")
 message("--------------------------------------------------------")

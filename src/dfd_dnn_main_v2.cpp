@@ -415,7 +415,7 @@ int main(int argc, char** argv)
         uint64_t test_step_count = 500;
         uint64_t gorgon_count = 500;
 
-        init_gorgon((sync_save_location + gorgon_savefile));
+        //init_gorgon((sync_save_location + gorgon_savefile));
 
         std::cout << "Starting Training..." << std::endl;
         start_time = chrono::system_clock::now();
@@ -471,7 +471,7 @@ int main(int argc, char** argv)
             if((one_step_calls % test_step_count) == 0)
             {
                 //cropper(num_crops, tr, gt_train, tr_crop, gt_crop);
-                //trainer.test_one_step(tr_crop, gt_crop);
+                trainer.test_one_step(tr_crop, gt_crop);
                 
                 // run the training and test images through the network to evaluate the intermediate performance
                 train_results = eval_all_net_performance(dfd_net, tr, gt_train, crop_sizes[1], scale);
@@ -509,7 +509,7 @@ int main(int argc, char** argv)
             // gorgon test
             if ((one_step_calls % gorgon_count) == 0)
             {
-                save_gorgon(dfd_net, one_step_calls);
+                //save_gorgon(dfd_net, one_step_calls);
             }
 
             if (one_step_calls >= max_one_step_count)
@@ -530,7 +530,7 @@ int main(int argc, char** argv)
         //run = false;
         //th1.join();
 //-----------------------------------------------------------------------------
-        close_gorgon();
+        //close_gorgon();
 
         cropper.close_cropper_stream();
 
