@@ -52,7 +52,7 @@
 #endif
 
 using namespace std;
-using namespace dlib;
+//using namespace dlib;
 
 // -------------------------------GLOBALS--------------------------------------
 
@@ -148,14 +148,16 @@ int main(int argc, char** argv)
 
     std::vector<std::string> stop_codes = { "Minimum Learning Rate Reached.", "Max Training Time Reached", "Max Training Steps Reached" };
     std::vector<double> stop_criteria;
-    uint64_t num_crops;
-    std::vector<std::pair<uint64_t, uint64_t>> crop_sizes; // height, width
+    training_params tp;
+    crop_info ci;
+    //uint64_t num_crops;
+    //std::vector<std::pair<uint64_t, uint64_t>> crop_sizes; // height, width
     std::vector<uint32_t> filter_num;
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
     double std = 1.0;
 
-    std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
+    //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
 
     // these are the parameters to load in an image to make sure that it is the correct size
     // for the network.  The first number makes sure that the image is a modulus of the number
@@ -175,21 +177,21 @@ int main(int argc, char** argv)
     std::string parseFilename = argv[1];
 
     // parse through the supplied csv file
-    parse_dnn_data_file(parseFilename, version, stop_criteria, train_inputfile, test_inputfile, num_crops, crop_sizes, scale, filter_num);
+    parse_dnn_data_file(parseFilename, version, stop_criteria, tp, train_inputfile, test_inputfile, ci, filter_num);
     training_duration = stop_criteria[0];
     max_one_step_count = (uint64_t)stop_criteria[1];
 
     // check the input scaling factors.  if they are the same then the expansion factor for the cropper is all 8
     // otherwise the expansion factor is 4
-    if(scale.first == scale.second)
+    if(ci.scale.first == ci.scale.second)
         expansion_factor = 8;
     else
         expansion_factor = 4;
 
     // modify crop sizes based on scales
     // this is done to make crop size input easier
-    crop_sizes[0].first = crop_sizes[0].first*scale.first;
-    crop_sizes[0].second = crop_sizes[0].second*scale.second;
+    ci.train_crop_sizes.first = ci.train_crop_sizes.first * ci.scale.first;
+    ci.train_crop_sizes.second = ci.train_crop_sizes.second * ci.scale.second;
 
     // check the platform
     get_platform_control();
@@ -347,29 +349,32 @@ int main(int argc, char** argv)
         ///////////////////////////////////////////////////////////////////////////////
         dlib::set_dnn_prefer_smallest_algorithms();
 
-        double intial_learning_rate = 0.0001;
-        double final_learning_rate = 0.001*intial_learning_rate;
+        //double intial_learning_rate = 0.0001;
+        //double final_learning_rate = 0.001*intial_learning_rate;
 
         // instantiate the network
         dfd_net_type dfd_net;
 
         // load in the conv and cont filter numbers from the input file
-        config_net(dfd_net, filter_num);
+        std::array<float, img_depth> avg_color;
+        avg_color.fill(128);
+        config_net(dfd_net, avg_color, filter_num);
         
         dlib::dnn_trainer<dfd_net_type, dlib::adam> trainer(dfd_net, dlib::adam(0.0005, 0.5, 0.99), { 0 });
         //dlib::dnn_trainer<dfd_net_type, dlib::sgd> trainer(dfd_net, dlib::sgd(0.0005, 0.99));
 
-        trainer.set_learning_rate(intial_learning_rate);
+        trainer.set_learning_rate(tp.intial_learning_rate);
         trainer.be_verbose();
         trainer.set_synchronization_file((sync_save_location + net_sync_name), std::chrono::minutes(5));
-        trainer.set_iterations_without_progress_threshold(3000);
+        trainer.set_iterations_without_progress_threshold(tp.steps_wo_progess);
+        trainer.set_learning_rate_shrink_factor(tp.learning_rate_shrink_factor);
         trainer.set_test_iterations_without_progress_threshold(3000);
         trainer.set_max_num_epochs(65000);
 
         dfd_cropper cropper;
-        cropper.set_chip_dims(crop_sizes[0]);
+        cropper.set_chip_dims(ci.train_crop_sizes);
         cropper.set_seed(time(0));
-        cropper.set_scale(scale);
+        cropper.set_scale(ci.scale);
         //cropper.set_scale_y(scale.first);
         cropper.set_expansion_factor(expansion_factor);
         cropper.set_stats_filename((output_save_location + cropper_stats_file));
@@ -380,12 +385,12 @@ int main(int argc, char** argv)
         DataLogStream << "Secondary data loading value: " << secondary << std::endl;
         DataLogStream << "------------------------------------------------------------------" << std::endl;
 
-        std::cout << "Eval Crop Size: " << crop_sizes[1].first << "x" << crop_sizes[1].second << std::endl << std::endl;
-        DataLogStream << "Eval Crop Size: " << crop_sizes[1].first << "x" << crop_sizes[1].second << std::endl;
+        std::cout << "Eval Crop Size: " << ci.eval_crop_sizes.first << "x" << ci.eval_crop_sizes.second << std::endl << std::endl;
+        DataLogStream << "Eval Crop Size: " << ci.eval_crop_sizes.first << "x" << ci.eval_crop_sizes.second << std::endl;
         DataLogStream << "------------------------------------------------------------------" << std::endl;
 
-        std::cout << "Crop count: " << num_crops << std::endl;
-        DataLogStream << "Crop count: " << num_crops << std::endl;
+        std::cout << "Crop count: " << ci.crop_num << std::endl;
+        DataLogStream << "Crop count: " << ci.crop_num << std::endl;
 
         std::cout << cropper << std::endl;
         DataLogStream << cropper << std::endl;
@@ -407,8 +412,7 @@ int main(int argc, char** argv)
         ///////////////////////////////////////////////////////////////////////////////
         // Step 3: Begin the training efforts
         ///////////////////////////////////////////////////////////////////////////////
-        double train_lr = trainer.get_learning_rate();
-        double avg_loss = 0;
+
         int32_t stop = -1;
         uint64_t count = 1;
 
@@ -438,9 +442,9 @@ int main(int argc, char** argv)
         while(stop < 0)       
         {
 
-            if (trainer.get_learning_rate() >= final_learning_rate)
+            if (trainer.get_learning_rate() >= tp.final_learning_rate)
             {
-                cropper(num_crops, tr, gt_train, tr_crop, gt_crop);
+                cropper(ci.crop_num, tr, gt_train, tr_crop, gt_crop);
 
                 //@mem((gt_crop[0].data).data,UINT16,1,gt_crop[0].nc(), gt_crop[0].nr(),gt_crop[0].nc()*2)
                 //@mem((tr_crop[0][0].data).data,UINT16,1,tr_crop[0][0].nc(), tr_crop[0][0].nr(),tr_crop[0][0].nc()*2)
@@ -470,13 +474,11 @@ int main(int argc, char** argv)
             
             if((one_step_calls % test_step_count) == 0)
             {
-                //cropper(num_crops, tr, gt_train, tr_crop, gt_crop);
                 trainer.test_one_step(tr_crop, gt_crop);
                 
                 // run the training and test images through the network to evaluate the intermediate performance
-                train_results = eval_all_net_performance(dfd_net, tr, gt_train, crop_sizes[1], scale);
-                test_results = eval_all_net_performance(dfd_net, te, gt_test, crop_sizes[1], scale);
-
+                train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
+                test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
 
                 // start logging the results
                 DataLogStream << std::setw(6) << std::setfill('0') << one_step_calls << ", ";
@@ -573,7 +575,7 @@ int main(int argc, char** argv)
 
         std::cout << "Analyzing Training Results..." << std::endl;
 
-        train_results = eval_all_net_performance(dfd_net, tr, gt_train, crop_sizes[1], scale);
+        train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
         std::cout << "------------------------------------------------------------------" << std::endl;
         //std::cout << "Image Crop #: " << idx << std::endl;
         std::cout << "NMAE, NRMSE, SSIM, Var_GT, Var_DM: " << std::fixed << std::setprecision(6) << train_results(0, 0) << ", " << train_results(0, 1) << ", " << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << std::endl;
@@ -601,7 +603,7 @@ int main(int argc, char** argv)
             //center_cropper(tr[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
 
             start_time = chrono::system_clock::now();
-            tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, crop_sizes[1], scale);
+            tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, ci.eval_crop_sizes, ci.scale);
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();
 
@@ -626,10 +628,6 @@ int main(int argc, char** argv)
 
         }
 
-        //win0.close_window();
-        //win1.close_window();
-        //win2.close_window();
-
 #endif
 
 
@@ -639,7 +637,7 @@ int main(int argc, char** argv)
 
         std::cout << std::endl << "Analyzing Test Results..." << std::endl;
 
-        test_results = eval_all_net_performance(dfd_net, te, gt_test, crop_sizes[1], scale);
+        test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
         std::cout << "------------------------------------------------------------------" << std::endl;
         std::cout << "NMAE, NRMSE, SSIM, Var_GT, Var_DM: " << std::fixed << std::setprecision(6) << test_results(0, 0) << ", " << test_results(0, 1) << ", " << test_results(0, 2) << ", " << test_results(0, 4) << ", " << test_results(0, 5) << std::endl;
 
@@ -659,10 +657,6 @@ int main(int argc, char** argv)
 
 #ifndef DLIB_NO_GUI_SUPPORT
 
-        //dlib::image_window win0;
-        //dlib::image_window win1;
-        //dlib::image_window win2;
-
         std::cout << "Image Count: " << te.size() << std::endl;;
 
         for (idx = 0; idx < te.size(); ++idx)
@@ -670,7 +664,7 @@ int main(int argc, char** argv)
             //center_cropper(te[idx], test_crop, crop_sizes[1].second * scale.first, crop_sizes[1].first * scale.second);
 
             start_time = chrono::system_clock::now();
-            tmp_results = eval_net_performance(dfd_net, te[idx], gt_test[idx], map, crop_sizes[1], scale);
+            tmp_results = eval_net_performance(dfd_net, te[idx], gt_test[idx], map, ci.eval_crop_sizes, ci.scale);
             //dlib::matrix<uint16_t> map = dfd_test_net(te[idx]);
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();

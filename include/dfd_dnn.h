@@ -9,10 +9,52 @@
 extern const uint32_t img_depth;
 extern const uint32_t secondary;
 
-void parse_dnn_data_file(std::string parseFilename, std::string &version, std::vector<double> &stop_criteria, std::string &training_file, std::string &test_file, uint64_t &num_crops, std::vector<std::pair<uint64_t, uint64_t>> &crop_sizes, std::pair<uint32_t, uint32_t> &scale, std::vector<uint32_t> &filter_num)
+// ----------------------------------------------------------------------------------------
+
+typedef struct training_params {
+
+    training_params() = default;
+    training_params(double ilr, double flr, double lrsf, uint32_t step) : intial_learning_rate(ilr), final_learning_rate(flr), learning_rate_shrink_factor(lrsf), steps_wo_progess(step) {}
+
+    double intial_learning_rate;
+    double final_learning_rate;
+    double learning_rate_shrink_factor;
+    uint32_t steps_wo_progess;
+
+} training_params;
+
+// ----------------------------------------------------------------------------------------
+
+typedef struct crop_info {
+
+    crop_info() = default;
+    crop_info(uint64_t n, std::pair<uint64_t, uint64_t> tcs, std::pair<uint64_t, uint64_t> ecs, std::pair<uint32_t, uint32_t> sc) : crop_num(n), train_crop_sizes(tcs), eval_crop_sizes(ecs), scale(sc) {}
+
+    uint64_t crop_num;
+    //uint64_t crop_height;
+    //uint64_t crop_width;
+    std::pair<uint64_t, uint64_t> train_crop_sizes;
+    std::pair<uint64_t, uint64_t> eval_crop_sizes;
+    std::pair<uint32_t, uint32_t> scale;
+} crop_info;
+
+// ----------------------------------------------------------------------------------------
+
+void parse_dnn_data_file(std::string parseFilename, 
+    std::string &version, 
+    std::vector<double> &stop_criteria, 
+    training_params& tp,
+    std::string &training_file,
+    std::string &test_file, 
+    crop_info& ci,
+    //uint64_t &num_crops, 
+    //std::vector<std::pair<uint64_t, uint64_t>> &crop_sizes, 
+    //std::pair<uint32_t, uint32_t> &scale, 
+    std::vector<uint32_t> &filter_num
+)
 {
     /*
-    # Version 2.5
+    # Version 3.0
     # The file is organized in the following manner:
     # Version (std::string): version name for named svaing of various files
     # Stopping Criteria (double, double) [stop time (hrs), max one step]
@@ -33,87 +75,112 @@ void parse_dnn_data_file(std::string parseFilename, std::string &version, std::v
     {
         switch (idx)
         {
-        case 0:
-            version = params[idx][0];
-            break;
-        case 1:
-            try {
 
-                stop_criteria.clear();
-                for (uint64_t jdx = 0; jdx<params[idx].size(); ++jdx)
-                {
-                    stop_criteria.push_back(stod(params[idx][jdx]));
+            // get the version
+            case 0:
+                version = params[idx][0];
+                break;
+
+            // get the stopping criteria
+            case 1:
+                try {
+                    stop_criteria.clear();
+                    for (uint64_t jdx = 0; jdx<params[idx].size(); ++jdx)
+                    {
+                        stop_criteria.push_back(stod(params[idx][jdx]));
+                    }
                 }
-            }
-            catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
-                stop_criteria.push_back(160.0);
-                stop_criteria.push_back(250000.0);
-                std::cout << "Error getting stopping criteria.  Setting values to default." << std::endl;
-            }
-            break;
-        case 2:
-            training_file = params[idx][0];
-            break;
-
-        case 3:
-            test_file = params[idx][0];
-            break;
-
-        case 4:
-            try {
-                num_crops = stol(params[idx][0]);
-            }
-            catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
-                num_crops = 2;
-                std::cout << "Setting crop_num to " << num_crops << std::endl;
-            }
-            break;
-
-        case 5:
-            try {
-                crop_sizes.push_back(std::make_pair(stol(params[idx][0]), stol(params[idx][1])));
-                crop_sizes.push_back(std::make_pair(stol(params[idx][2]), stol(params[idx][3])));
-            }
-            catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
-                crop_sizes.push_back(std::make_pair(108, 36));
-                crop_sizes.push_back(std::make_pair(108, 36));
-                std::cout << "Setting Training Crop Size to " << crop_sizes[0].first << "x" << crop_sizes[0].second << std::endl;
-                std::cout << "Setting Evaluation Crop Size to " << crop_sizes[1].first << "x" << crop_sizes[1].second << std::endl;
-            }
-            break;
-
-        case 6:
-            try {
-                scale = std::make_pair(stol(params[idx][0]), stol(params[idx][1]));
-            }
-            catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
-                scale = std::make_pair(6, 18);
-                std::cout << "Setting Scale to default: " << scale.first << " x " << scale.second << std::endl;
-            }
-            break;
-
-        case 7:
-            try {
-                filter_num.clear();
-                for (int jdx = 0; jdx<params[idx].size(); ++jdx)
-                {
-                    filter_num.push_back(stol(params[idx][jdx]));
+                catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                    stop_criteria.push_back(160.0);
+                    stop_criteria.push_back(250000.0);
+                    std::cout << "Error getting stopping criteria.  Setting values to default." << std::endl;
                 }
-            }
-            catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
-                filter_num.clear();
+                break;
 
-                std::cout << "Error getting filter numbers.  No values passed on." << std::endl;
-            }
-            break;
+            // get the training parameters
+            case 2:
+                try {
+                    tp = training_params(stod(params[idx][0]), stod(params[idx][1]), stod(params[idx][2]), stol(params[idx][3]));
+                }
+                catch (std::exception & e) {
+                    std::cout << e.what() << std::endl;
+                    std::cout << "Using default training parameters..." << std::endl;
+                    tp = training_params(0.001, 0.000001, 0.1, 2500);
+                }
+                break;
 
-        default:
-            break;
+            // get the training input file
+            case 3:
+                training_file = params[idx][0];
+                break;
+
+            // get the test input file
+            case 4:
+                test_file = params[idx][0];
+                break;
+
+            // get the crop info
+            case 5:
+                try {
+                    ci = crop_info(stol(params[idx][0]), 
+                        std::make_pair(stol(params[idx][1]), stol(params[idx][2])), 
+                        std::make_pair(stol(params[idx][3]), stol(params[idx][4])),
+                        std::make_pair(stol(params[idx][5]), stol(params[idx][6])));
+                }
+                catch (std::exception & e) {
+                    std::cout << e.what() << std::endl;
+                    std::cout << "Setting crop-info to defalut values..." << std::endl;
+                    ci = crop_info(40, std::make_pair(32, 32), std::make_pair(352, 352), std::make_pair(1,1));
+                }
+                break;
+
+            //case 6:
+            //    try {
+            //        crop_sizes.push_back(std::make_pair(stol(params[idx][0]), stol(params[idx][1])));
+            //        crop_sizes.push_back(std::make_pair(stol(params[idx][2]), stol(params[idx][3])));
+            //    }
+            //    catch (std::exception &e) {
+            //        std::cout << e.what() << std::endl;
+            //        crop_sizes.push_back(std::make_pair(108, 36));
+            //        crop_sizes.push_back(std::make_pair(108, 36));
+            //        std::cout << "Setting Training Crop Size to " << crop_sizes[0].first << "x" << crop_sizes[0].second << std::endl;
+            //        std::cout << "Setting Evaluation Crop Size to " << crop_sizes[1].first << "x" << crop_sizes[1].second << std::endl;
+            //    }
+            //    break;
+
+            // 
+            //case 7:
+            //    try {
+            //        scale = std::make_pair(stol(params[idx][0]), stol(params[idx][1]));
+            //    }
+            //    catch (std::exception &e) {
+            //        std::cout << e.what() << std::endl;
+            //        scale = std::make_pair(6, 18);
+            //        std::cout << "Setting Scale to default: " << scale.first << " x " << scale.second << std::endl;
+            //    }
+            //    break;
+
+            // get the number of conv filters for each layer
+            case 6:
+                try {
+                    filter_num.clear();
+                    for (int jdx = 0; jdx<params[idx].size(); ++jdx)
+                    {
+                        filter_num.push_back(stol(params[idx][jdx]));
+                    }
+                }
+                catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                    filter_num.clear();
+
+                    std::cout << "Error getting filter numbers.  No values passed on." << std::endl;
+                }
+                break;
+
+            default:
+                break;
+
         }   // end of switch
 
     }   // end of for
