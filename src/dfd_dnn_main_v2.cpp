@@ -20,7 +20,6 @@
 #include <atomic>
 
 // Custom includes
-#include "dfd_dnn.h"
 #include "get_platform.h"
 #include "file_parser.h"
 #include "get_current_time.h"
@@ -37,6 +36,7 @@
 // Things must go in this order since the array size is determined
 // by the network header file
 #include "dfd_net_v14.h"
+#include "dfd_dnn.h"
 #include "load_dfd_data.h"
 #include "eval_dfd_net_performance.h"  
 
@@ -157,6 +157,8 @@ int main(int argc, char** argv)
     uint32_t expansion_factor;
     double std = 1.0;
 
+    std::array<float, img_depth> avg_color;
+
     //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
 
     // these are the parameters to load in an image to make sure that it is the correct size
@@ -177,7 +179,7 @@ int main(int argc, char** argv)
     std::string parseFilename = argv[1];
 
     // parse through the supplied csv file
-    parse_dnn_data_file(parseFilename, version, stop_criteria, tp, train_inputfile, test_inputfile, ci, filter_num);
+    parse_dnn_data_file(parseFilename, version, stop_criteria, tp, train_inputfile, test_inputfile, ci, avg_color, filter_num);
     training_duration = stop_criteria[0];
     max_one_step_count = (uint64_t)stop_criteria[1];
 
@@ -356,8 +358,6 @@ int main(int argc, char** argv)
         dfd_net_type dfd_net;
 
         // load in the conv and cont filter numbers from the input file
-        std::array<float, img_depth> avg_color;
-        avg_color.fill(128);
         config_net(dfd_net, avg_color, filter_num);
         
         dlib::dnn_trainer<dfd_net_type, dlib::adam> trainer(dfd_net, dlib::adam(0.0005, 0.5, 0.99), { 0 });

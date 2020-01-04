@@ -50,6 +50,7 @@ void parse_dnn_data_file(std::string parseFilename,
     //uint64_t &num_crops, 
     //std::vector<std::pair<uint64_t, uint64_t>> &crop_sizes, 
     //std::pair<uint32_t, uint32_t> &scale, 
+    std::array<float, img_depth> &avg_color,
     std::vector<uint32_t> &filter_num
 )
 {
@@ -161,8 +162,24 @@ void parse_dnn_data_file(std::string parseFilename,
             //    }
             //    break;
 
-            // get the number of conv filters for each layer
+            // get the average colors for the dataset
             case 6:
+                try {
+                    for (int jdx = 0; jdx < img_depth; ++jdx)
+                    {
+                        avg_color[jdx] = std::stof(params[idx][jdx]);
+                    }
+                }
+                catch (std::exception & e) {
+                    std::cout << e.what() << std::endl;
+                    avg_color.fill(128);
+
+                    std::cout << "Error getting average color values.  Setting values to 128." << std::endl;
+                }
+                break;
+
+            // get the number of conv filters for each layer
+            case 7:
                 try {
                     filter_num.clear();
                     for (int jdx = 0; jdx<params[idx].size(); ++jdx)
