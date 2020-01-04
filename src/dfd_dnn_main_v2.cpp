@@ -25,7 +25,8 @@
 #include "get_current_time.h"
 #include "num2string.h"
 
-#include "gorgon_capture.h"
+//#include "gorgon_capture.h"
+#include "dlib_jet_functions.h"
 #include "dfd_cropper.h"
 #include "center_cropper.h"
 #include "get_cuda_devices.h"
@@ -358,7 +359,7 @@ int main(int argc, char** argv)
         dfd_net_type dfd_net;
 
         // load in the conv and cont filter numbers from the input file
-        config_net(dfd_net, avg_color, filter_num);
+        //config_net(dfd_net, avg_color, filter_num);
         
         dlib::dnn_trainer<dfd_net_type, dlib::adam> trainer(dfd_net, dlib::adam(0.0005, 0.5, 0.99), { 0 });
         //dlib::dnn_trainer<dfd_net_type, dlib::sgd> trainer(dfd_net, dlib::sgd(0.0005, 0.99));
