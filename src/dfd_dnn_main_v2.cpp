@@ -356,10 +356,10 @@ int main(int argc, char** argv)
         //double final_learning_rate = 0.001*intial_learning_rate;
 
         // instantiate the network
-        dfd_net_type dfd_net;
+        //dfd_net_type dfd_net;
 
         // load in the conv and cont filter numbers from the input file
-        //config_net(dfd_net, avg_color, filter_num);
+        dfd_net_type dfd_net = config_net<dfd_net_type>(avg_color, filter_num);
         
         dlib::dnn_trainer<dfd_net_type, dlib::adam> trainer(dfd_net, dlib::adam(0.0005, 0.5, 0.99), { 0 });
         //dlib::dnn_trainer<dfd_net_type, dlib::sgd> trainer(dfd_net, dlib::sgd(0.0005, 0.99));
