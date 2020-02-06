@@ -36,7 +36,8 @@
 // Net Version
 // Things must go in this order since the array size is determined
 // by the network header file
-#include "dfd_net_v14.h"
+//#include "dfd_net_v14.h"
+#include "dfd_net_lin_v01.h"
 #include "dfd_dnn.h"
 #include "load_dfd_data.h"
 #include "eval_dfd_net_performance.h"  
@@ -157,7 +158,7 @@ int main(int argc, char** argv)
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
     double std = 1.0;
-
+    std::vector<int32_t> gpu = { 1 };
     std::array<float, img_depth> avg_color;
 
     //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
@@ -352,6 +353,10 @@ int main(int argc, char** argv)
         ///////////////////////////////////////////////////////////////////////////////
         dlib::set_dnn_prefer_smallest_algorithms();
 
+        // set the cuda device explicitly
+        if (gpu.size() == 1)
+            dlib::cuda::set_device(gpu[0]);
+
         //double intial_learning_rate = 0.0001;
         //double final_learning_rate = 0.001*intial_learning_rate;
 
@@ -361,7 +366,7 @@ int main(int argc, char** argv)
         // load in the conv and cont filter numbers from the input file
         dfd_net_type dfd_net = config_net<dfd_net_type>(avg_color, filter_num);
         
-        dlib::dnn_trainer<dfd_net_type, dlib::adam> trainer(dfd_net, dlib::adam(0.0005, 0.5, 0.99), { 0 });
+        dlib::dnn_trainer<dfd_net_type, dlib::adam> trainer(dfd_net, dlib::adam(0.0005, 0.5, 0.99), gpu);
         //dlib::dnn_trainer<dfd_net_type, dlib::sgd> trainer(dfd_net, dlib::sgd(0.0005, 0.99));
 
         trainer.set_learning_rate(tp.intial_learning_rate);
@@ -475,11 +480,11 @@ int main(int argc, char** argv)
             
             if((one_step_calls % test_step_count) == 0)
             {
-                trainer.test_one_step(tr_crop, gt_crop);
                 
                 // run the training and test images through the network to evaluate the intermediate performance
                 train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
                 test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
+                trainer.test_one_step(tr_crop, gt_crop);
 
                 // start logging the results
                 DataLogStream << std::setw(6) << std::setfill('0') << one_step_calls << ", ";
