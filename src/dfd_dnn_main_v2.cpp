@@ -480,6 +480,8 @@ int main(int argc, char** argv)
             
             if((one_step_calls % test_step_count) == 0)
             {
+            /*
+                //trainer.test_one_step(tr_crop, gt_crop);
                 
                 // run the training and test images through the network to evaluate the intermediate performance
                 train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
@@ -511,7 +513,8 @@ int main(int argc, char** argv)
 
                 std::string map_save_file = output_save_location + "test_save_" + version + "_" + num2str(one_step_calls,"%06d") + ".png";
                 //dlib::save_png(dlib::matrix_cast<uint8_t>(map), map_save_file);
-                
+                trainer.test_one_step(tr_crop, gt_crop);
+                */
             }
 
             // gorgon test
@@ -612,22 +615,25 @@ int main(int argc, char** argv)
             tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, ci.eval_crop_sizes, ci.scale);
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();
+            
+            if(img_depth >= 3)
+            {
+                dlib::matrix<dlib::rgb_pixel> rgb_img;
+                merge_channels(tr[idx], rgb_img, 0);
 
-            dlib::matrix<dlib::rgb_pixel> rgb_img;
-            merge_channels(tr[idx], rgb_img, 0);
+                win0.clear_overlay();
+                win0.set_image(rgb_img);
+                win0.set_title("Input Image");
+            
+                win1.clear_overlay();
+                win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_train[idx]),0.0,255.0));
+                win1.set_title("Ground Truth");
 
-            win0.clear_overlay();
-            win0.set_image(rgb_img);
-            win0.set_title("Input Image");
-        
-            win1.clear_overlay();
-            win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_train[idx]),0.0,255.0));
-            win1.set_title("Ground Truth");
-
-            win2.clear_overlay();
-            win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
-            win2.set_title("DNN Map");
-
+                win2.clear_overlay();
+                win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
+                win2.set_title("DNN Map");
+            }
+            
             elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
             std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
             std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
@@ -675,21 +681,24 @@ int main(int argc, char** argv)
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();
 
-            dlib::matrix<dlib::rgb_pixel> rgb_img;
-            merge_channels(te[idx], rgb_img, 0);
+            if(img_depth >= 3)
+            {
+                dlib::matrix<dlib::rgb_pixel> rgb_img;
+                merge_channels(te[idx], rgb_img, 0);
 
-            win0.clear_overlay();
-            win0.set_image(rgb_img);
-            win0.set_title("Input Image");
+                win0.clear_overlay();
+                win0.set_image(rgb_img);
+                win0.set_title("Input Image");
 
-            win1.clear_overlay();
-            win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_test[idx]),0.0,255.0));
-            win1.set_title("Groundtruth Depthmap");
+                win1.clear_overlay();
+                win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_test[idx]),0.0,255.0));
+                win1.set_title("Groundtruth Depthmap");
 
-            win2.clear_overlay();
-            win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
-            win2.set_title("DFD DNN Depthmap");
-
+                win2.clear_overlay();
+                win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
+                win2.set_title("DFD DNN Depthmap");
+            }
+            
             elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
             std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
             std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
