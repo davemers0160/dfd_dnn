@@ -422,7 +422,7 @@ int main(int argc, char** argv)
         int32_t stop = -1;
         uint64_t count = 1;
 
-        uint64_t test_step_count = 500;
+        uint64_t test_step_count = 20;
         uint64_t gorgon_count = 500;
 
         //init_gorgon((sync_save_location + gorgon_savefile));
@@ -480,11 +480,11 @@ int main(int argc, char** argv)
             
             if((one_step_calls % test_step_count) == 0)
             {
-                
+/*                
                 // run the training and test images through the network to evaluate the intermediate performance
-                train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
-                test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
-                trainer.test_one_step(tr_crop, gt_crop);
+                //train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
+                //test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
+                //trainer.test_one_step(tr_crop, gt_crop);
 
                 // start logging the results
                 DataLogStream << std::setw(6) << std::setfill('0') << one_step_calls << ", ";
@@ -511,7 +511,7 @@ int main(int argc, char** argv)
 
                 std::string map_save_file = output_save_location + "test_save_" + version + "_" + num2str(one_step_calls,"%06d") + ".png";
                 //dlib::save_png(dlib::matrix_cast<uint8_t>(map), map_save_file);
-                
+*/             
             }
 
             // gorgon test
