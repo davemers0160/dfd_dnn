@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
     double std = 1.0;
-    std::vector<int32_t> gpu = { 1 };
+    std::vector<int32_t> gpu = { 0 };
     std::array<float, img_depth> avg_color;
 
     //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
@@ -168,6 +168,13 @@ int main(int argc, char** argv)
     // and the second number is an offest from the modulus.  This is used based on the network
     // structure (downsampling and upsampling tensor sizes).
     std::pair<uint32_t, uint32_t> mod_params(16, 0);     
+
+    // this is a check to see what CUDA version is being used
+    // if it is version 10.1 or greater this code might work.  it fails with 10.0, but it could work with 8.5
+    //if(CUDA_VERSION >= 10.1)
+
+    //else
+    const bool run_tests = false;
 
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -422,7 +429,7 @@ int main(int argc, char** argv)
         int32_t stop = -1;
         uint64_t count = 1;
 
-        uint64_t test_step_count = 20;
+        uint64_t test_step_count = 1000;
         uint64_t gorgon_count = 500;
 
         //init_gorgon((sync_save_location + gorgon_savefile));
@@ -478,9 +485,12 @@ int main(int argc, char** argv)
 
             uint64_t one_step_calls = trainer.get_train_one_step_calls();
             
-            if((one_step_calls % test_step_count) == 0)
+            if(((one_step_calls % test_step_count) == 0) && (run_tests == true))
             {
 /*                
+                //trainer.test_one_step(tr_crop, gt_crop);
+
+
                 // run the training and test images through the network to evaluate the intermediate performance
                 //train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
                 //test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
@@ -490,17 +500,17 @@ int main(int argc, char** argv)
                 DataLogStream << std::setw(6) << std::setfill('0') << one_step_calls << ", ";
                 DataLogStream << std::fixed << std::setprecision(10) << trainer.get_learning_rate() << ", ";
                 DataLogStream << std::fixed << std::setprecision(5) << trainer.get_average_loss() << ", ";
-                
+
                 std::cout << "------------------------------------------------------------------" << std::endl;
-                std::cout << "Training Results (NMAE, NRMSE, SSIM, Var_GT, Var_DM): " << std::fixed << std::setprecision(5) << train_results(0, 0) << ", " << train_results(0, 1) 
-                          << ", " << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << std::endl;
-                std::cout << "Testing Results (NMAE, NRMSE, SSIM, Var_GT, Var_DM):  " << std::fixed << std::setprecision(5) << test_results(0, 0) << ", " << test_results(0, 1) 
-                          << ", " << test_results(0, 2) << ", " << test_results(0, 4) << ", " << test_results(0, 5) << std::endl;
+                std::cout << "Training Results (NMAE, NRMSE, SSIM, Var_GT, Var_DM): " << std::fixed << std::setprecision(5) << train_results(0, 0) << ", " << train_results(0, 1)
+                    << ", " << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << std::endl;
+                std::cout << "Testing Results (NMAE, NRMSE, SSIM, Var_GT, Var_DM):  " << std::fixed << std::setprecision(5) << test_results(0, 0) << ", " << test_results(0, 1)
+                    << ", " << test_results(0, 2) << ", " << test_results(0, 4) << ", " << test_results(0, 5) << std::endl;
                 std::cout << "------------------------------------------------------------------" << std::endl;
-                
-                DataLogStream << std::fixed << std::setprecision(5) << train_results(0, 0) << ", " << train_results(0, 1) << ", " 
+
+                DataLogStream << std::fixed << std::setprecision(5) << train_results(0, 0) << ", " << train_results(0, 1) << ", "
                     << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << ", ";
-                DataLogStream << std::fixed << std::setprecision(5) << test_results(0, 0) << ", " << test_results(0, 1) << ", " 
+                DataLogStream << std::fixed << std::setprecision(5) << test_results(0, 0) << ", " << test_results(0, 1) << ", "
                     << test_results(0, 2) << ", " << test_results(0, 4) << ", " << test_results(0, 5) << std::endl;
 
                 // run a single image through to save the progress
@@ -509,9 +519,11 @@ int main(int argc, char** argv)
                 //center_cropper(te[1], tec, crop_w, crop_h);
                 //dlib::matrix<uint16_t> map = dfd_net(te[1]);
 
-                std::string map_save_file = output_save_location + "test_save_" + version + "_" + num2str(one_step_calls,"%06d") + ".png";
+                std::string map_save_file = output_save_location + "test_save_" + version + "_" + num2str(one_step_calls, "%06d") + ".png";
                 //dlib::save_png(dlib::matrix_cast<uint8_t>(map), map_save_file);
+
 */             
+
             }
 
             // gorgon test
@@ -612,22 +624,25 @@ int main(int argc, char** argv)
             tmp_results = eval_net_performance(dfd_net, tr[idx], gt_train[idx], map, ci.eval_crop_sizes, ci.scale);
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();
+            
+            if(img_depth >= 3)
+            {
+                dlib::matrix<dlib::rgb_pixel> rgb_img;
+                merge_channels(tr[idx], rgb_img, 0);
 
-            dlib::matrix<dlib::rgb_pixel> rgb_img;
-            merge_channels(tr[idx], rgb_img, 0);
+                win0.clear_overlay();
+                win0.set_image(rgb_img);
+                win0.set_title("Input Image");
+            
+                win1.clear_overlay();
+                win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_train[idx]),0.0,255.0));
+                win1.set_title("Ground Truth");
 
-            win0.clear_overlay();
-            win0.set_image(rgb_img);
-            win0.set_title("Input Image");
-        
-            win1.clear_overlay();
-            win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_train[idx]),0.0,255.0));
-            win1.set_title("Ground Truth");
-
-            win2.clear_overlay();
-            win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
-            win2.set_title("DNN Map");
-
+                win2.clear_overlay();
+                win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
+                win2.set_title("DNN Map");
+            }
+            
             elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
             std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
             std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
@@ -675,21 +690,24 @@ int main(int argc, char** argv)
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();
 
-            dlib::matrix<dlib::rgb_pixel> rgb_img;
-            merge_channels(te[idx], rgb_img, 0);
+            if(img_depth >= 3)
+            {
+                dlib::matrix<dlib::rgb_pixel> rgb_img;
+                merge_channels(te[idx], rgb_img, 0);
 
-            win0.clear_overlay();
-            win0.set_image(rgb_img);
-            win0.set_title("Input Image");
+                win0.clear_overlay();
+                win0.set_image(rgb_img);
+                win0.set_title("Input Image");
 
-            win1.clear_overlay();
-            win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_test[idx]),0.0,255.0));
-            win1.set_title("Groundtruth Depthmap");
+                win1.clear_overlay();
+                win1.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(gt_test[idx]),0.0,255.0));
+                win1.set_title("Groundtruth Depthmap");
 
-            win2.clear_overlay();
-            win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
-            win2.set_title("DFD DNN Depthmap");
-
+                win2.clear_overlay();
+                win2.set_image(mat_to_rgbjetmat(dlib::matrix_cast<float>(map),0.0,255.0));
+                win2.set_title("DFD DNN Depthmap");
+            }
+            
             elapsed_time = chrono::duration_cast<d_sec>(stop_time - start_time);
             std::cout << "Image Crop #" << std::setw(5) << std::setfill('0') << idx << ": Elapsed Time: " << elapsed_time.count();
             std::cout << ", " << tmp_results(0,0) << ", " << tmp_results(0,1) << ", " << tmp_results(0,2) << std::endl;
