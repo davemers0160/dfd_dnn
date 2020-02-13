@@ -37,7 +37,8 @@
 // Things must go in this order since the array size is determined
 // by the network header file
 //#include "dfd_net_v14.h"
-#include "dfd_net_lin_v01.h"
+//#include "dfd_net_lin_v01.h"
+#include "dfd_net_l2_v01.h"
 #include "dfd_dnn.h"
 #include "load_dfd_data.h"
 #include "eval_dfd_net_performance.h"  
@@ -158,7 +159,7 @@ int main(int argc, char** argv)
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
     double std = 1.0;
-    std::vector<int32_t> gpu = { 0 };
+    std::vector<int32_t> gpu = { 1 };
     std::array<float, img_depth> avg_color;
 
     //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
