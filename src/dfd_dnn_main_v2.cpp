@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     // for the network.  The first number makes sure that the image is a modulus of the number
     // and the second number is an offest from the modulus.  This is used based on the network
     // structure (downsampling and upsampling tensor sizes).
-    std::pair<uint32_t, uint32_t> mod_params(16, 0);     
+    std::pair<uint32_t, uint32_t> mod_params(16, 0);
 
     // this is a check to see what CUDA version is being used
     // if it is version 10.1 or greater this code might work.  it fails with 10.0, but it could work with 8.5
