@@ -34,11 +34,10 @@
 #include "array_image_operations.h"
 
 // Net Version
-// Things must go in this order since the array size is determined
-// by the network header file
-//#include "dfd_net_v14.h"
+// Things must go in this order since the array size is determined by the network header file
+#include "dfd_net_v14.h"
 //#include "dfd_net_lin_v01.h"
-#include "dfd_net_l2_v01.h"
+//#include "dfd_net_l2_v01.h"
 #include "dfd_dnn.h"
 #include "load_dfd_data.h"
 #include "eval_dfd_net_performance.h"  
@@ -54,9 +53,6 @@
     #include <dlib/gui_widgets.h>
 #endif
 
-using namespace std;
-//using namespace dlib;
-
 // -------------------------------GLOBALS--------------------------------------
 
 extern const uint32_t img_depth;
@@ -71,6 +67,9 @@ std::string net_sync_name = "dfd_sync_";
 std::string logfileName = "dfd_net_";
 std::string gorgon_savefile = "gorgon_dfd_";
 std::string cropper_stats_file = "crop_stats_";
+
+// --------------------------External Functions--------------------------------
+
 
 // ----------------------------------------------------------------------------
 void get_platform_control(void)
@@ -159,10 +158,8 @@ int main(int argc, char** argv)
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
     double std = 1.0;
-    std::vector<int32_t> gpu = { 1 };
+    std::vector<int32_t> gpu = { 0 };
     std::array<float, img_depth> avg_color;
-
-    //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
 
     // these are the parameters to load in an image to make sure that it is the correct size
     // for the network.  The first number makes sure that the image is a modulus of the number
@@ -175,7 +172,7 @@ int main(int argc, char** argv)
     //if(CUDA_VERSION >= 10.1)
 
     //else
-    const bool run_tests = false;
+    const bool run_tests = true;
 
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -365,12 +362,7 @@ int main(int argc, char** argv)
         if (gpu.size() == 1)
             dlib::cuda::set_device(gpu[0]);
 
-        //double intial_learning_rate = 0.0001;
-        //double final_learning_rate = 0.001*intial_learning_rate;
-
         // instantiate the network
-        //dfd_net_type dfd_net;
-
         // load in the conv and cont filter numbers from the input file
         dfd_net_type dfd_net = config_net<dfd_net_type>(avg_color, filter_num);
         
@@ -389,9 +381,8 @@ int main(int argc, char** argv)
         cropper.set_chip_dims(ci.train_crop_sizes);
         cropper.set_seed(time(0));
         cropper.set_scale(ci.scale);
-        //cropper.set_scale_y(scale.first);
         cropper.set_expansion_factor(expansion_factor);
-        cropper.set_stats_filename((output_save_location + cropper_stats_file));
+        //cropper.set_stats_filename((output_save_location + cropper_stats_file));
 
         std::cout << "Input Array Depth: " << img_depth << std::endl;
         std::cout << "Secondary data loading value: " << secondary << std::endl << std::endl;
@@ -485,17 +476,22 @@ int main(int argc, char** argv)
             }
 
             uint64_t one_step_calls = trainer.get_train_one_step_calls();
-            
+
+            /*
+            // this section once worked to test the performance of the network during training
+            // but now it is broken somehow
             if(((one_step_calls % test_step_count) == 0) && (run_tests == true))
             {
-/*                
+                
                 //trainer.test_one_step(tr_crop, gt_crop);
 
-
                 // run the training and test images through the network to evaluate the intermediate performance
+                //train_results = eval_all_net_performance(dfd_net, tr_crop, gt_crop, ci.train_crop_sizes, ci.scale);
                 //train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
                 //test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
                 //trainer.test_one_step(tr_crop, gt_crop);
+
+                //dfd_net(tr_crop);
 
                 // start logging the results
                 DataLogStream << std::setw(6) << std::setfill('0') << one_step_calls << ", ";
@@ -523,9 +519,8 @@ int main(int argc, char** argv)
                 std::string map_save_file = output_save_location + "test_save_" + version + "_" + num2str(one_step_calls, "%06d") + ".png";
                 //dlib::save_png(dlib::matrix_cast<uint8_t>(map), map_save_file);
 
-*/             
-
             }
+            */
 
             // gorgon test
             if ((one_step_calls % gorgon_count) == 0)
@@ -596,7 +591,6 @@ int main(int argc, char** argv)
 
         train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
         std::cout << "------------------------------------------------------------------" << std::endl;
-        //std::cout << "Image Crop #: " << idx << std::endl;
         std::cout << "NMAE, NRMSE, SSIM, Var_GT, Var_DM: " << std::fixed << std::setprecision(6) << train_results(0, 0) << ", " << train_results(0, 1) << ", " << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << std::endl;
 
         DataLogStream << "------------------------------------------------------------------" << std::endl;
@@ -652,7 +646,6 @@ int main(int argc, char** argv)
 
 #endif
 
-
         ///////////////////////////////////////////////////////////////////////////////
         // Step 5: Run through test images
         ///////////////////////////////////////////////////////////////////////////////
@@ -687,7 +680,6 @@ int main(int argc, char** argv)
 
             start_time = chrono::system_clock::now();
             tmp_results = eval_net_performance(dfd_net, te[idx], gt_test[idx], map, ci.eval_crop_sizes, ci.scale);
-            //dlib::matrix<uint16_t> map = dfd_test_net(te[idx]);
             //dlib::matrix<uint16_t> map = dfd_test_net(test_crop);
             stop_time = chrono::system_clock::now();
 
@@ -753,4 +745,3 @@ int main(int argc, char** argv)
     return 0;
 
 }    // end of main
-
