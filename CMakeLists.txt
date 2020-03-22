@@ -52,6 +52,7 @@ endif()
 file(GLOB SOURCES "src/*.c*"	
     "${COMMON_ROOT}/src/*.cpp"
     "${DLIB_CONTRIB}/src/*.cpp"
+    "${DFD_COMMON_ROOT}/src/*.cpp"
     )            
             
 set(project_includes "include" "${COMMON_ROOT}/include" "${DLIB_CONTRIB}/include" "${DFD_COMMON_ROOT}/include")
