@@ -421,7 +421,7 @@ int main(int argc, char** argv)
         int32_t stop = -1;
         uint64_t count = 1;
 
-        uint64_t test_step_count = 1000;
+        uint64_t test_step_count = 50;
         uint64_t gorgon_count = 500;
 
         //init_gorgon((sync_save_location + gorgon_savefile));
@@ -476,21 +476,22 @@ int main(int argc, char** argv)
             }
 
             uint64_t one_step_calls = trainer.get_train_one_step_calls();
-
+            
             /*
             // this section once worked to test the performance of the network during training
             // but now it is broken somehow
             if(((one_step_calls % test_step_count) == 0) && (run_tests == true))
             {
                 
+                //std::cout << "------------------------------------------------------------------" << std::endl;
                 //trainer.test_one_step(tr_crop, gt_crop);
 
                 // run the training and test images through the network to evaluate the intermediate performance
                 //train_results = eval_all_net_performance(dfd_net, tr_crop, gt_crop, ci.train_crop_sizes, ci.scale);
                 //train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
                 //test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
+                
                 //trainer.test_one_step(tr_crop, gt_crop);
-
                 //dfd_net(tr_crop);
 
                 // start logging the results
@@ -498,7 +499,6 @@ int main(int argc, char** argv)
                 DataLogStream << std::fixed << std::setprecision(10) << trainer.get_learning_rate() << ", ";
                 DataLogStream << std::fixed << std::setprecision(5) << trainer.get_average_loss() << ", ";
 
-                std::cout << "------------------------------------------------------------------" << std::endl;
                 std::cout << "Training Results (NMAE, NRMSE, SSIM, Var_GT, Var_DM): " << std::fixed << std::setprecision(5) << train_results(0, 0) << ", " << train_results(0, 1)
                     << ", " << train_results(0, 2) << ", " << train_results(0, 4) << ", " << train_results(0, 5) << std::endl;
                 std::cout << "Testing Results (NMAE, NRMSE, SSIM, Var_GT, Var_DM):  " << std::fixed << std::setprecision(5) << test_results(0, 0) << ", " << test_results(0, 1)
