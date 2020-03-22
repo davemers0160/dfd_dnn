@@ -36,9 +36,9 @@
 // Net Version
 // Things must go in this order since the array size is determined
 // by the network header file
-//#include "dfd_net_v14.h"
+#include "dfd_net_v14.h"
 //#include "dfd_net_lin_v01.h"
-#include "dfd_net_l2_v01.h"
+//#include "dfd_net_l2_v01.h"
 #include "dfd_dnn.h"
 #include "load_dfd_data.h"
 #include "eval_dfd_net_performance.h"  
@@ -159,7 +159,7 @@ int main(int argc, char** argv)
     uint64_t max_one_step_count;
     uint32_t expansion_factor;
     double std = 1.0;
-    std::vector<int32_t> gpu = { 1 };
+    std::vector<int32_t> gpu = { 0 };
     std::array<float, img_depth> avg_color;
 
     //std::pair<uint32_t, uint32_t> scale(1, 1);  // y_scale, x_scale
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
     //if(CUDA_VERSION >= 10.1)
 
     //else
-    const bool run_tests = false;
+    const bool run_tests = true;
 
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -488,13 +488,13 @@ int main(int argc, char** argv)
             
             if(((one_step_calls % test_step_count) == 0) && (run_tests == true))
             {
-/*                
+                
                 //trainer.test_one_step(tr_crop, gt_crop);
 
 
                 // run the training and test images through the network to evaluate the intermediate performance
-                //train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
-                //test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
+                train_results = eval_all_net_performance(dfd_net, tr, gt_train, ci.eval_crop_sizes, ci.scale);
+                test_results = eval_all_net_performance(dfd_net, te, gt_test, ci.eval_crop_sizes, ci.scale);
                 //trainer.test_one_step(tr_crop, gt_crop);
 
                 // start logging the results
@@ -523,7 +523,7 @@ int main(int argc, char** argv)
                 std::string map_save_file = output_save_location + "test_save_" + version + "_" + num2str(one_step_calls, "%06d") + ".png";
                 //dlib::save_png(dlib::matrix_cast<uint8_t>(map), map_save_file);
 
-*/             
+             
 
             }
 
