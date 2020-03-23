@@ -265,12 +265,18 @@ int main(int argc, char** argv)
         DataLogStream << "Version: 2.0    Date: " << sdate << "    Time: " << stime << std::endl;
         DataLogStream << "------------------------------------------------------------------" << std::endl;
 
+        std::cout << get_cuda_devices() << std::endl;
+
+        DataLogStream << get_cuda_devices();
+        DataLogStream << "------------------------------------------------------------------" << std::endl;
+
         ///////////////////////////////////////////////////////////////////////////////
         // Step 1: Read in the training and testing images
         ///////////////////////////////////////////////////////////////////////////////
         // get the "DATA_HOME" environment variable <- location of the root data folder
         //data_home = path_check(get_env_variable("DATA_HOME"));
  
+        std::cout << "train input file: " << train_inputfile << std::endl;
         // parse through the supplied training csv file
 #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
         parse_csv_file(train_inputfile, training_file);
@@ -292,12 +298,9 @@ int main(int argc, char** argv)
         // remove the first line which was the data directory
         training_file.erase(training_file.begin());
         
-        std::cout << get_cuda_devices() << std::endl;
 
-        DataLogStream << get_cuda_devices();
-        DataLogStream << "------------------------------------------------------------------" << std::endl;
 
-        std::cout << train_inputfile << std::endl;
+        //std::cout << train_inputfile << std::endl;
         std::cout << "Training image sets to parse: " << training_file.size() << std::endl;
         
         DataLogStream << train_inputfile << std::endl;
@@ -316,6 +319,7 @@ int main(int argc, char** argv)
 
 //-----------------------------------------------------------------------------
         // load the test data
+        std::cout << "test input file: " << test_inputfile << std::endl;
 #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
         parse_csv_file(test_inputfile, test_file);
         test_data_directory = data_home + test_file[0][0];
@@ -335,7 +339,7 @@ int main(int argc, char** argv)
         // remove the first line which was the data directory
         test_file.erase(test_file.begin());
 
-        std::cout << test_inputfile << std::endl;
+        //std::cout << test_inputfile << std::endl;
         std::cout << "Test image sets to parse: " << test_file.size() << std::endl;
 
         DataLogStream << "------------------------------------------------------------------" << std::endl;
