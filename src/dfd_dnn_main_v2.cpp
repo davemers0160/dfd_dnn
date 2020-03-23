@@ -130,7 +130,7 @@ int main(int argc, char** argv)
     std::string train_inputfile;
     std::string test_inputfile;
     std::string train_data_directory, test_data_directory;
-    std::string data_home;
+    std::string data_home = "";
     
     std::vector<std::vector<std::string>> training_file;
     std::vector<std::vector<std::string>> test_file;
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
         // Step 1: Read in the training and testing images
         ///////////////////////////////////////////////////////////////////////////////
         // get the "DATA_HOME" environment variable <- location of the root data folder
-        data_home = path_check(get_env_variable("DATA_HOME"));
+        //data_home = path_check(get_env_variable("DATA_HOME"));
  
         // parse through the supplied training csv file
 #if defined(_WIN32) | defined(__WIN32__) | defined(__WIN32) | defined(_WIN64) | defined(__WIN64)
