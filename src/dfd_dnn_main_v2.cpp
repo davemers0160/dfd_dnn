@@ -21,6 +21,7 @@
 
 // Custom includes
 #include "get_platform.h"
+#include "file_ops.h"
 #include "file_parser.h"
 #include "get_current_time.h"
 #include "num2string.h"
