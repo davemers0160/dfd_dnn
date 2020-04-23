@@ -31,7 +31,7 @@
 #include "dfd_cropper.h"
 #include "center_cropper.h"
 #include "get_cuda_devices.h"
-#include "apply_random_noise.h"
+//#include "apply_random_noise.h"
 #include "array_image_operations.h"
 
 // Net Version
@@ -42,6 +42,7 @@
 #include "dfd_dnn.h"
 #include "load_dfd_data.h"
 #include "eval_dfd_net_performance.h"  
+#include "image_noise_functions.h"
 
 // dlib includes
 #include <dlib/dnn.h>
@@ -460,10 +461,11 @@ int main(int argc, char** argv)
                 //@mem((tr_crop[0][0].data).data,UINT16,1,tr_crop[0][0].nc(), tr_crop[0][0].nr(),tr_crop[0][0].nc()*2)
 
                 // apply a random noise to the image
-                //for (auto&& tc : tr_crop)
-                //{
-                //    apply_random_noise((uint8_t)0, (uint8_t)255, tc, rnd, std);
-                //}
+                for (auto&& tc : tr_crop)
+                {
+                    //apply_uniform_noise((uint8_t)0, (uint8_t)255, tc, rnd, std);
+                    apply_poisson_noise(tc, std, rnd, 0.0, 255.0);
+                }
 
                 trainer.train_one_step(tr_crop, gt_crop);
             }
