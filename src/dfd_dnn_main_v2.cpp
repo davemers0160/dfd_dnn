@@ -72,7 +72,6 @@ std::string cropper_stats_file = "crop_stats_";
 
 // --------------------------External Functions--------------------------------
 
-
 // ----------------------------------------------------------------------------
 void get_platform_control(void)
 {
@@ -465,6 +464,8 @@ int main(int argc, char** argv)
                 {
                     //apply_uniform_noise((uint8_t)0, (uint8_t)255, tc, rnd, std);
                     apply_poisson_noise(tc, std, rnd, 0.0, 255.0);
+
+                    scale_intensity(tc, rnd, 0.3, 1.0);
                 }
 
                 trainer.train_one_step(tr_crop, gt_crop);
