@@ -187,7 +187,7 @@ int main(int argc, char** argv)
     std::string parseFilename = argv[1];
 
     // parse through the supplied csv file
-    parse_dnn_data_file(parseFilename, version, stop_criteria, tp, train_inputfile, test_inputfile, ci, avg_color, filter_num);
+    parse_dnn_data_file(parseFilename, version, gpu, stop_criteria, tp, train_inputfile, test_inputfile, ci, avg_color, filter_num);
     training_duration = stop_criteria[0];
     max_one_step_count = (uint64_t)stop_criteria[1];
 

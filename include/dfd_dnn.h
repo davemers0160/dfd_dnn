@@ -42,6 +42,7 @@ typedef struct crop_info {
 
 void parse_dnn_data_file(std::string parseFilename, 
     std::string &version, 
+    std::vector<int32_t> &gpu,
     std::vector<double> &stop_criteria, 
     training_params& tp,
     std::string &training_file,
@@ -55,7 +56,7 @@ void parse_dnn_data_file(std::string parseFilename,
 )
 {
     /*
-    # Version 3.0
+    # Version 3.1
     # The file is organized in the following manner:
     # Version (std::string): version name for named svaing of various files
     # Stopping Criteria (double, double) [stop time (hrs), max one step]
@@ -82,8 +83,26 @@ void parse_dnn_data_file(std::string parseFilename,
                 version = params[idx][0];
                 break;
 
-            // get the stopping criteria
+            // get the gpu(s) to target
             case 1:
+                try {
+                    gpu.clear();
+                    for (uint64_t jdx = 0; jdx < params[idx].size(); ++jdx)
+                    {
+                        gpu.push_back(stoi(params[idx][jdx]));
+                    }
+                }
+                catch (std::exception &e)
+                {
+                    gpu.clear();
+                    gpu.push_back(0);
+                    std::cout << e.what() << std::endl;
+                    std::cout << "Error getting the GPU(s) to target.  Setting the targeted GPU to: 0" << std::endl;
+                }
+                break;
+
+            // get the stopping criteria
+            case 2:
                 try {
                     stop_criteria.clear();
                     for (uint64_t jdx = 0; jdx<params[idx].size(); ++jdx)
@@ -92,15 +111,16 @@ void parse_dnn_data_file(std::string parseFilename,
                     }
                 }
                 catch (std::exception &e) {
-                    std::cout << e.what() << std::endl;
+                    stop_criteria.clear();
                     stop_criteria.push_back(160.0);
                     stop_criteria.push_back(250000.0);
+                    std::cout << e.what() << std::endl;
                     std::cout << "Error getting stopping criteria.  Setting values to default." << std::endl;
                 }
                 break;
 
             // get the training parameters
-            case 2:
+            case 3:
                 try {
                     tp = training_params(stod(params[idx][0]), stod(params[idx][1]), stod(params[idx][2]), stol(params[idx][3]));
                 }
@@ -112,17 +132,17 @@ void parse_dnn_data_file(std::string parseFilename,
                 break;
 
             // get the training input file
-            case 3:
+            case 4:
                 training_file = params[idx][0];
                 break;
 
             // get the test input file
-            case 4:
+            case 5:
                 test_file = params[idx][0];
                 break;
 
             // get the crop info
-            case 5:
+            case 6:
                 try {
                     ci = crop_info(stol(params[idx][0]), 
                         std::make_pair(stol(params[idx][1]), stol(params[idx][2])), 
@@ -136,7 +156,7 @@ void parse_dnn_data_file(std::string parseFilename,
                 }
                 break;
 
-            //case 6:
+            //case 7:
             //    try {
             //        crop_sizes.push_back(std::make_pair(stol(params[idx][0]), stol(params[idx][1])));
             //        crop_sizes.push_back(std::make_pair(stol(params[idx][2]), stol(params[idx][3])));
@@ -151,7 +171,7 @@ void parse_dnn_data_file(std::string parseFilename,
             //    break;
 
             // 
-            //case 7:
+            //case 8:
             //    try {
             //        scale = std::make_pair(stol(params[idx][0]), stol(params[idx][1]));
             //    }
@@ -163,7 +183,7 @@ void parse_dnn_data_file(std::string parseFilename,
             //    break;
 
             // get the average colors for the dataset
-            case 6:
+            case 7:
                 try {
                     for (int jdx = 0; jdx < img_depth; ++jdx)
                     {
@@ -171,15 +191,14 @@ void parse_dnn_data_file(std::string parseFilename,
                     }
                 }
                 catch (std::exception & e) {
-                    std::cout << e.what() << std::endl;
                     avg_color.fill(128);
-
+                    std::cout << e.what() << std::endl;
                     std::cout << "Error getting average color values.  Setting values to 128." << std::endl;
                 }
                 break;
 
             // get the number of conv filters for each layer
-            case 7:
+            case 8:
                 try {
                     filter_num.clear();
                     for (int jdx = 0; jdx<params[idx].size(); ++jdx)
@@ -188,9 +207,8 @@ void parse_dnn_data_file(std::string parseFilename,
                     }
                 }
                 catch (std::exception &e) {
-                    std::cout << e.what() << std::endl;
                     filter_num.clear();
-
+                    std::cout << e.what() << std::endl;
                     std::cout << "Error getting filter numbers.  No values passed on." << std::endl;
                 }
                 break;
